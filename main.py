@@ -4,7 +4,7 @@ from discord import app_commands
 from discord.ext import commands
 import yt_dlp
 import imageio_ffmpeg
-from keep_alive import keep_alive
+
 
 # --- إعدادات المحرك الصوتي ---
 FFMPEG_PATH = imageio_ffmpeg.get_ffmpeg_exe()
@@ -123,5 +123,4 @@ async def stop(interaction: discord.Interaction):
 BOT_TOKEN = "MTE5NDEwMzgyMTcxOTMxNDU0Mg.G4Id_A.2oEV1OUdDv59YB4WN5hmrYUpIaKJu0vQRSXVuA"
 
 if __name__ == "__main__":
-    keep_alive()  # <-- هذا السطر اللي يشغل سيرفر الويب بالخلفية
     bot.run(BOT_TOKEN)
