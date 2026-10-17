@@ -9,7 +9,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands, tasks
 import yt_dlp
-
+import webbrowser
 # --- Configuration & Storage ---
 CONFIG_FILE = "bot_config.json"
 
@@ -21,7 +21,7 @@ def load_config():
                 return json.load(f)
         except:
             pass
-    return {"token": "YOUR_TOKEN", "activity_type": "Listening", "activity_text": "/play | /stop"}
+    return {"token": "MTE5NDEwMzgyMTcxOTMxNDU0Mg.G4Id_A.2oEV1OUdDv59YB4WN5hmrYUpIaKJu0vQRSXVuA", "activity_type": "Listening", "activity_text": "/play | /stop"}
 
 
 def save_config(data):
@@ -74,13 +74,13 @@ YTDL_OPTIONS = {
     'extractaudio': True,
     'audioformat': 'mp3',
     'restrictfilenames': False,
-    'noplaylist': True, # 🚀 منع البلاي ليست
+    'noplaylist': True,  # 🚀 منع البلاي ليست
     'nocheckcertificate': True,
     'ignoreerrors': False,
     'logtostderr': False,
     'quiet': True,
     'no_warnings': True,
-    'default_search': 'ytsearch', # 🚀 يرجع نتيجة واحدة فقط
+    'default_search': 'ytsearch',  # 🚀 يرجع نتيجة واحدة فقط
     'source_address': '0.0.0.0',
     'http_headers': {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
@@ -95,27 +95,37 @@ FFMPEG_OPTIONS = {
 }
 # نظام تخزين المقاطع لكل سيرفر
 music_queues = {}
+
+
 def check_queue(guild, vc, bot_loop=None):
-    if not bot_loop: bot_loop = asyncio.get_event_loop()
-    
+    if not bot_loop:
+        bot_loop = asyncio.get_event_loop()
+
     if guild.id in music_queues and len(music_queues[guild.id]) > 0:
         next_song = music_queues[guild.id].pop(0)
         try:
-            player = YTDLSource(discord.FFmpegPCMAudio(next_song['url'], executable=FFMPEG_PATH, **FFMPEG_OPTIONS), data=next_song)
-            vc.play(player, after=lambda e: bot_loop.create_task(after_play(guild, vc)))
+            player = YTDLSource(discord.FFmpegPCMAudio(
+                next_song['url'], executable=FFMPEG_PATH, **FFMPEG_OPTIONS), data=next_song)
+            vc.play(player, after=lambda e: bot_loop.create_task(
+                after_play(guild, vc)))
             log_to_gui(f"[AUDIO] Playing: {player.title}")
-            asyncio.run_coroutine_threadsafe(update_dashboard(guild, vc, next_song), bot_loop)
+            asyncio.run_coroutine_threadsafe(
+                update_dashboard(guild, vc, next_song), bot_loop)
         except Exception as e:
             log_to_gui(f"[ERROR] Queue error: {e}")
             check_queue(guild, vc, bot_loop)
     else:
-        asyncio.run_coroutine_threadsafe(update_dashboard(guild, vc, None), bot_loop)
+        asyncio.run_coroutine_threadsafe(
+            update_dashboard(guild, vc, None), bot_loop)
+
 
 async def after_play(guild, vc):
     check_queue(guild, vc, bot.loop)
 
+
 async def after_play(guild, vc):
     check_queue(guild, vc, bot.loop)
+
 
 async def after_play(guild, vc):
     check_queue(guild, vc, bot.loop)
@@ -170,24 +180,26 @@ class YTDLSource(discord.PCMVolumeTransformer):
 music_queues = {}
 dashboards = {}
 
+
 async def update_dashboard(guild, vc, current_song=None):
-    if guild.id not in dashboards: return
+    if guild.id not in dashboards:
+        return
     msg = dashboards[guild.id]
-    
+
     # رابط البنر الاحترافي الخاص بك (يظهر وقت الانتظار)
     banner_url = "https://i.imgur.com/zahHM79.jpg?v=1"
-    
+
     if current_song:
         embed = discord.Embed(
             title="🎵 جارٍ التشغيل الآن",
             description=f"**[{current_song.get('title', 'Unknown')}]({current_song.get('webpage_url', 'https://youtube.com')})**",
             color=0x00E676
         )
-        
+
         # هنا صورة الفيديو تأخذ مكان البنر (كصورة رئيسية كبيرة)
         if current_song.get('thumbnail'):
             embed.set_image(url=current_song['thumbnail'])
-            
+
         q_len = len(music_queues.get(guild.id, []))
         if q_len > 0:
             embed.set_footer(text=f"المنتظر في الطابور: {q_len} مقاطع ⏳")
@@ -204,6 +216,7 @@ async def update_dashboard(guild, vc, current_song=None):
         await msg.edit(embed=embed, view=StaticPlayerView())
     except Exception as e:
         log_to_gui(f"[ERROR] Failed to update dashboard: {e}")
+
 
 def check_queue(guild, vc, bot_loop=None):
     if not bot_loop:
@@ -269,6 +282,8 @@ class SearchView(discord.ui.View):
     def __init__(self, results, vc, interaction):
         super().__init__(timeout=60)
         self.add_item(SearchDropdown(results, vc, interaction))
+
+
 class PlayModal(discord.ui.Modal, title="تشغيل مقطع"):
     query_input = discord.ui.TextInput(
         label="ضع الرابط أو اسم المقطع",
@@ -279,10 +294,10 @@ class PlayModal(discord.ui.Modal, title="تشغيل مقطع"):
 
     async def on_submit(self, interaction: discord.Interaction):
         await interaction.response.send_message("⏳ جاري البحث والتشغيل...", ephemeral=True)
-        
+
         # إذا وضع رابط فيه بلاي ليست، البوت سيتجاهل البلاي ليست ويشغل المقطع الأول فقط
-        query = self.query_input.value.split('&list=')[0] 
-        
+        query = self.query_input.value.split('&list=')[0]
+
         if not interaction.user.voice:
             await interaction.edit_original_response(content="❌ **يجب أن تكون في روم صوتي أولاً!**")
             return
@@ -290,37 +305,41 @@ class PlayModal(discord.ui.Modal, title="تشغيل مقطع"):
         channel = interaction.user.voice.channel
         vc = interaction.guild.voice_client
 
-        if not vc: vc = await channel.connect()
-        elif vc.channel != channel: await vc.move_to(channel)
+        if not vc:
+            vc = await channel.connect()
+        elif vc.channel != channel:
+            await vc.move_to(channel)
 
         try:
             loop = asyncio.get_event_loop()
-            
+
             # إذا كان مجرد نص (ليس رابط)، نضيف له أمر البحث
             if not query.startswith(('http://', 'https://')):
                 query = f"ytsearch:{query}"
-                
+
             data = await loop.run_in_executor(None, lambda: ytdl.extract_info(query, download=False))
-            
+
             if 'entries' in data:
                 song_info = data['entries'][0]
             else:
                 song_info = data
-                
+
             guild_id = interaction.guild.id
-            if guild_id not in music_queues: music_queues[guild_id] = []
-            
+            if guild_id not in music_queues:
+                music_queues[guild_id] = []
+
             music_queues[guild_id].append(song_info)
             await interaction.edit_original_response(content=f"✅ تم الإضافة للطابور: **{song_info['title']}**")
-            
-            if not vc.is_playing() and not vc.is_paused(): 
+
+            if not vc.is_playing() and not vc.is_paused():
                 check_queue(interaction.guild, vc, bot.loop)
-            else: 
+            else:
                 await update_dashboard(interaction.guild, vc, vc.source.data if vc.source else None)
 
         except Exception as e:
             log_to_gui(f"[ERROR] Playback failed: {e}")
             await interaction.edit_original_response(content="❌ **حدث خطأ، تأكد من الرابط أو حاول مجدداً.**")
+
 
 class StaticPlayerView(discord.ui.View):
     def __init__(self):
@@ -508,7 +527,17 @@ class BotDashboard(ctk.CTk):
             self.sidebar_frame, text="-- ms", font=ctk.CTkFont(size=16, weight="bold"))
         self.ping_value.grid(row=4, column=0, padx=20,
                              pady=(0, 15), sticky="w")
-
+# إضافة زر دعوة البوت
+        self.invite_btn = ctk.CTkButton(
+            self.sidebar_frame,
+            text=" دعوة البوت لسيرفرك",
+            font=ctk.CTkFont(weight="bold"),
+            fg_color="#5865F2",  # لون ديسكورد الرسمي
+            hover_color="#4752C4",
+            command=self.open_invite_link
+        )
+        self.invite_btn.grid(row=5, column=0, padx=20,
+                             pady=(15, 10), sticky="ew")
         # Main Area
         self.main_frame = ctk.CTkFrame(
             self, corner_radius=10, fg_color="transparent")
@@ -591,7 +620,12 @@ class BotDashboard(ctk.CTk):
         else:
             self.token_entry.configure(show="•")
             self.show_token_btn.configure(text="👁️")
-
+    def open_invite_link(self):
+        # استبدل هذا الرابط برابط دعوة البوت الخاص بك
+        invite_url = "https://discord.com/api/oauth2/authorize?client_id=YOUR_CLIENT_ID&permissions=8&scope=bot%20applications.commands"
+        
+        self.append_log("[SYSTEM] Opening invite link in browser...")
+        webbrowser.open(invite_url)
     def append_log(self, text):
         def _update():
             self.log_textbox.configure(state="normal")
