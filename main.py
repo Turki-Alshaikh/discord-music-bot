@@ -10,6 +10,7 @@ from discord import app_commands
 from discord.ext import commands, tasks
 import yt_dlp
 import webbrowser
+import imageio_ffmpeg
 # --- Configuration & Storage ---
 CONFIG_FILE = "bot_config.json"
 
@@ -48,15 +49,8 @@ def save_dashboards(data):
         json.dump(data, f, indent=4)
 
 
-# --- مسار FFmpeg الديناميكي (لحل مشكلة الـ exe) ---
-# --- مسار FFmpeg الديناميكي (لحل مشكلة الـ exe) ---
-
-if getattr(sys, 'frozen', False):
-    application_path = os.path.dirname(sys.executable)
-else:
-    application_path = os.path.dirname(os.path.abspath(__file__))
-
-FFMPEG_PATH = os.path.join(application_path, "ffmpeg.exe")
+# --- جلب مسار FFmpeg تلقائياً بدون تحميل يدوي ---
+FFMPEG_PATH = imageio_ffmpeg.get_ffmpeg_exe()
 
 # --- Discord Bot Setup & Audio Engine ---
 intents = discord.Intents.default()
