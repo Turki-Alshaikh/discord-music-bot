@@ -1,3 +1,4 @@
+
 ![Audio Bot Pro Banner](banner.jpg)
 
 # 🎵 Audio Bot Pro - Discord Music Engine
@@ -16,13 +17,12 @@ A professional Discord music bot equipped with a Python-based Graphical User Int
 * **Auto-Cleaning Chat (Self-Destructing Messages):** Ephemeral bot responses feature a live countdown and delete themselves automatically to prevent chat clutter.
 * **Smart Queue System:** Supports queuing multiple tracks and plays them sequentially and automatically.
 * **Auto-Recovery:** Automatically saves dashboard locations to `dashboards.json` to restore them instantly upon bot restart.
-* **Powerful Audio Engine:** Powered by `yt-dlp` for optimal audio extraction and `FFmpeg` for uninterrupted streaming.
+* **Auto-Managed FFmpeg:** No manual downloads required. The bot automatically fetches and manages the FFmpeg audio engine via the `imageio-ffmpeg` library.
 * **Error-Free UI Compatibility:** Button emojis are seamlessly integrated into text labels to guarantee 100% compatibility with Discord's UI API, preventing "Invalid Form Body" errors.
 
-### ⚠️ Core Assets (Crucial)
-For the audio engine and bot appearance to work correctly, the following two files **MUST** be present in the **same directory** as the main script (`main.py`):
-1. **`ffmpeg.exe`**: The core executable for processing audio. (Without it, the bot cannot join voice channels or play audio).
-2. **`banner.jpg`**: The professional banner image used for the dashboard, displayed inside Discord and this README.
+### ⚠️ Core Asset (Crucial)
+For the bot's dashboard appearance to work correctly, the following file **MUST** be present in the **same directory** as the main script (`main.py`):
+* **`banner.jpg`**: The professional banner image used for the dashboard, displayed inside Discord and this README.
 
 ### 🛠️ Prerequisites
 Make sure to install the required Python libraries using `pip`:
@@ -71,7 +71,7 @@ The bot is streamlined to be entirely button-driven. The only text command avail
 ### 📝 Developer Notes
 
 * **Search Engine:** `yt-dlp` is optimized to immediately return the single best search result to guarantee fast response times.
-* **Dynamic FFmpeg Path:** The code supports dynamic `FFmpeg` paths, making it fully compatible if you wish to compile the Python script into a standalone executable (`.exe`) later.
+* **Dynamic FFmpeg Path:** Uses `imageio_ffmpeg.get_ffmpeg_exe()` to dynamically locate the audio engine, making the project highly portable and easy to compile into a standalone `.exe`.
 
 ---
 
@@ -86,15 +86,14 @@ The bot is streamlined to be entirely button-driven. The only text command avail
 * **تنظيف الشات التلقائي (Auto-Cleanup):** رسائل التنبيه المخفية (Ephemeral) تحتوي على عداد تنازلي حي، وتقوم بحذف نفسها تلقائياً لمنع تراكم الرسائل وإزعاج المستخدم.
 * **نظام طابور ذكي (Smart Queue):** يدعم إضافة عدة مقاطع للطابور وتشغيلها بالتسلسل تلقائياً.
 * **استعادة تلقائية للبيانات:** يقوم البوت بحفظ أماكن لوحات التحكم (Dashboards) في ملف `dashboards.json` لاستعادتها فوراً عند إعادة تشغيل البوت.
-* **محرك صوتي قوي:** يعتمد على `yt-dlp` لاستخراج الصوت بأفضل جودة و `FFmpeg` للبث دون انقطاع.
+* **محرك FFmpeg مدمج:** لا حاجة لتحميل أي ملفات تشغيل صوتية يدوياً، البوت يقوم بجلب وإدارة محرك `FFmpeg` تلقائياً عبر مكتبة `imageio-ffmpeg`.
 * **استقرار تام للواجهة (Error-Free UI):** تم دمج الإيموجيات برمجياً مع النصوص لتجنب أخطاء واجهة برمجة ديسكورد (API) وضمان عمل الأزرار وتحديث اللوحة في كل الأوقات بدون مشاكل.
 
 ### ⚠️ متطلبات أساسية ومهمة جداً
 
-لكي يعمل محرك الصوت ومظهر البوت الاحترافي بشكل صحيح، **يجب** توفر الملفين التاليين في **نفس المجلد** الذي يتواجد فيه ملف التشغيل الأساسي (`main.py`):
+لكي يعمل مظهر اللوحة الاحترافي بشكل صحيح، **يجب** توفر الملف التالي في **نفس المجلد** الذي يتواجد فيه ملف التشغيل الأساسي (`main.py`):
 
-1. **`ffmpeg.exe`**: المشغل الأساسي لمعالجة الصوتيات. (بدونه لن يتمكن البوت من الانضمام للروم الصوتي أو تشغيل أي مقطع).
-2. **`banner.jpg`**: الصورة الاحترافية (البانر) الخاصة بلوحة التحكم، والتي يستخدمها الكود للعرض داخل الديسكورد، وتُعرض أيضاً في هذا الملف التعريفي.
+* **`banner.jpg`**: الصورة الاحترافية (البانر) الخاصة بلوحة التحكم، والتي يستخدمها الكود للعرض داخل الديسكورد، وتُعرض أيضاً في هذا الملف التعريفي.
 
 ### 🛠️ المتطلبات البرمجية
 
@@ -145,7 +144,7 @@ python main.py
 ### 📝 ملاحظات للمطور
 
 * **نظام البحث:** تم ضبط `yt-dlp` لإرجاع أفضل وأدق نتيجة بحث واحدة فوراً لضمان سرعة الاستجابة.
-* **مسار FFmpeg الديناميكي:** الكود يدعم مسارات `FFmpeg` الديناميكية في حال رغبت بتحويل ملف بايثون إلى ملف تنفيذي (`.exe`) لاحقاً.
+* **مسار FFmpeg الديناميكي:** يستدعي الكود `imageio_ffmpeg.get_ffmpeg_exe()` لتحديد مسار محرك الصوت تلقائياً، مما يجعل المشروع سهل النقل والتحويل إلى ملف تنفيذي `.exe` بدون القلق من فقدان الملفات المرفقة.
 
 ---
 
