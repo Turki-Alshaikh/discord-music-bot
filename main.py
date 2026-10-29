@@ -21,7 +21,7 @@ def load_config():
                 return json.load(f)
         except:
             pass
-    return {"token": "MTE5NDEwMzgyMTcxOTMxNDU0Mg.G4Id_A.2oEV1OUdDv59YB4WN5hmrYUpIaKJu0vQRSXVuA", "activity_type": "Listening", "activity_text": "/play | /stop"}
+    return {"token": "YOUR_TOKEN", "activity_type": "Listening", "activity_text": "/play | /stop"}
 
 
 def save_config(data):
@@ -245,7 +245,15 @@ async def after_play(guild, vc):
 
 # --- واجهات المستخدم (القوائم، النوافذ، والأزرار) ---
 
-
+async def countdown_and_delete(interaction: discord.Interaction, text: str, seconds: int = 5):
+    """دالة لعمل عداد تنازلي حي للرسائل المخفية ثم حذفها لمنع التراكم"""
+    try:
+        for i in range(seconds, 0, -1):
+            await interaction.edit_original_response(content=f"{text}\n\n* ستختفي هذه الرسالة تلقائياً بعد {i} ثواني...*")
+            await asyncio.sleep(1)
+        await interaction.delete_original_response()
+    except Exception:
+        pass
 class SearchDropdown(discord.ui.Select):
     def __init__(self, results, vc, interaction):
         self.results = results
@@ -293,13 +301,14 @@ class PlayModal(discord.ui.Modal, title="تشغيل مقطع"):
     )
 
     async def on_submit(self, interaction: discord.Interaction):
-        await interaction.response.send_message("⏳ جاري البحث والتشغيل...", ephemeral=True)
+        await interaction.response.send_message(" جاري البحث والتشغيل...", ephemeral=True)
 
-        # إذا وضع رابط فيه بلاي ليست، البوت سيتجاهل البلاي ليست ويشغل المقطع الأول فقط
         query = self.query_input.value.split('&list=')[0]
 
         if not interaction.user.voice:
-            await interaction.edit_original_response(content="❌ **يجب أن تكون في روم صوتي أولاً!**")
+            msg = " **يجب أن تكون في روم صوتي أولاً!**"
+            await interaction.edit_original_response(content=msg)
+            bot.loop.create_task(countdown_and_delete(interaction, msg, 5))
             return
 
         channel = interaction.user.voice.channel
@@ -312,8 +321,6 @@ class PlayModal(discord.ui.Modal, title="تشغيل مقطع"):
 
         try:
             loop = asyncio.get_event_loop()
-
-            # إذا كان مجرد نص (ليس رابط)، نضيف له أمر البحث
             if not query.startswith(('http://', 'https://')):
                 query = f"ytsearch:{query}"
 
@@ -329,60 +336,76 @@ class PlayModal(discord.ui.Modal, title="تشغيل مقطع"):
                 music_queues[guild_id] = []
 
             music_queues[guild_id].append(song_info)
-            await interaction.edit_original_response(content=f"✅ تم الإضافة للطابور: **{song_info['title']}**")
+            msg = f" تم الإضافة للطابور: **{song_info['title']}**"
 
             if not vc.is_playing() and not vc.is_paused():
                 check_queue(interaction.guild, vc, bot.loop)
             else:
                 await update_dashboard(interaction.guild, vc, vc.source.data if vc.source else None)
 
+            # تفعيل العداد التنازلي للرسالة المخفية
+            await interaction.edit_original_response(content=msg)
+            bot.loop.create_task(countdown_and_delete(interaction, msg, 5))
+
         except Exception as e:
             log_to_gui(f"[ERROR] Playback failed: {e}")
-            await interaction.edit_original_response(content="❌ **حدث خطأ، تأكد من الرابط أو حاول مجدداً.**")
-
+            msg = " **حدث خطأ، تأكد من الرابط أو حاول مجدداً.**"
+            await interaction.edit_original_response(content=msg)
+            bot.loop.create_task(countdown_and_delete(interaction, msg, 5))
 
 class StaticPlayerView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
-    @discord.ui.button(label="بحث / تشغيل", style=discord.ButtonStyle.success, emoji="🔍", custom_id="btn_play")
+    # تم دمج الإيموجي داخل الـ label مباشرة لتجنب خطأ ديسكورد
+    @discord.ui.button(label=" بحث / تشغيل", style=discord.ButtonStyle.success, custom_id="btn_play")
     async def play_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.send_modal(PlayModal())
 
-    @discord.ui.button(label="إيقاف / تشغيل", style=discord.ButtonStyle.primary, emoji="⏯️", custom_id="btn_pause")
+    @discord.ui.button(label=" إيقاف / تشغيل", style=discord.ButtonStyle.primary, custom_id="btn_pause")
     async def pause_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
         vc = interaction.guild.voice_client
+        msg = ""
         if vc:
             if vc.is_playing():
                 vc.pause()
-                await interaction.response.send_message("تم الإيقاف المؤقت ⏸️", ephemeral=True)
+                msg = "تم الإيقاف المؤقت "
             elif vc.is_paused():
                 vc.resume()
-                await interaction.response.send_message("تم استئناف التشغيل ▶️", ephemeral=True)
+                msg = "تم استئناف التشغيل "
         else:
-            await interaction.response.send_message("لا يوجد مقطع يعمل!", ephemeral=True)
+            msg = "لا يوجد مقطع يعمل!"
+            
+        await interaction.response.send_message(msg, ephemeral=True)
+        bot.loop.create_task(countdown_and_delete(interaction, msg, 3))
 
-    @discord.ui.button(label="تخطي", style=discord.ButtonStyle.secondary, emoji="⏭️", custom_id="btn_skip")
+    @discord.ui.button(label=" تخطي", style=discord.ButtonStyle.secondary, custom_id="btn_skip")
     async def skip_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
         vc = interaction.guild.voice_client
+        msg = ""
         if vc and (vc.is_playing() or vc.is_paused()):
             vc.stop()
-            await interaction.response.send_message("تم تخطي المقطع ⏭️", ephemeral=True)
+            msg = "تم تخطي المقطع "
         else:
-            await interaction.response.send_message("لا يوجد شيء لتخطيه!", ephemeral=True)
+            msg = "لا يوجد شيء لتخطيه!"
+            
+        await interaction.response.send_message(msg, ephemeral=True)
+        bot.loop.create_task(countdown_and_delete(interaction, msg, 3))
 
-    @discord.ui.button(label="إيقاف البوت", style=discord.ButtonStyle.danger, emoji="⏹️", custom_id="btn_stop")
+    @discord.ui.button(label=" إيقاف البوت", style=discord.ButtonStyle.danger, custom_id="btn_stop")
     async def stop_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
         vc = interaction.guild.voice_client
+        msg = ""
         if vc:
             music_queues[interaction.guild.id] = []
             await vc.disconnect()
             await update_dashboard(interaction.guild, None, None)
-            await interaction.response.send_message("تم إيقاف البوت ومسح الطابور ⏹️", ephemeral=True)
+            msg = "تم إيقاف البوت ومسح الطابور "
         else:
-            await interaction.response.send_message("البوت ليس في روم صوتي!", ephemeral=True)
-# --- Bot Events & Commands ---
-
+            msg = "البوت ليس في روم صوتي!"
+            
+        await interaction.response.send_message(msg, ephemeral=True)
+        bot.loop.create_task(countdown_and_delete(interaction, msg, 3))
 
 @bot.event
 async def on_ready():
@@ -622,7 +645,7 @@ class BotDashboard(ctk.CTk):
             self.show_token_btn.configure(text="👁️")
     def open_invite_link(self):
         # استبدل هذا الرابط برابط دعوة البوت الخاص بك
-        invite_url = "https://discord.com/api/oauth2/authorize?client_id=YOUR_CLIENT_ID&permissions=8&scope=bot%20applications.commands"
+        invite_url = "https://discord.com/api/oauth2/authorize?client_id=1194103821719314542&permissions=8&scope=bot%20applications.commands"
         
         self.append_log("[SYSTEM] Opening invite link in browser...")
         webbrowser.open(invite_url)
